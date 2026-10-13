@@ -1,6 +1,6 @@
-import mogoose, {Schema} from "mongoose";
+import mongoose, {Schema} from "mongoose";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 
 
 
@@ -76,15 +76,21 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 
 
 userSchema.methods.generateAccessToken = function () {
-  const accessToken = jwt.sign({
+  return jwt.sign({
     _id: this._id,
-  })
-}
+  }, process.env.ACCESS_TOKEN_SECRET, {
+    expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN,
+  });
+};
 
 userSchema.methods.generateRefreshToken = function () {
-  const refreshToken = jwt.sign()
-}
+  return jwt.sign({
+    _id: this._id,
+  }, process.env.REFRESH_TOKEN_SECRET, {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
+  });
+};
 
 
 
-export const User = mogoose.model("User", userSchema);
+export const User = mongoose.model("User", userSchema);
