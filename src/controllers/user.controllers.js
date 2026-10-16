@@ -3,6 +3,29 @@ import {ApiError} from "../utils/ApiError.js"
 import {User} from "../models/user.model.js"
 import {uploadResult} from "../utils/cloudnary.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
+
+
+const generateAccessAndRefereshTokens = async(userId) => {
+
+    try{
+
+       const user =  await User.findById(userId)
+       const accessToken = user.generateAccessToken()
+       const refreshToken = user.generateRefreshToken()
+       user.refreshToken = refreshToken
+      await user.save({validateBeforeSave:false})
+
+       return {accessToken, refreshToken}
+
+    }
+    catch (error){
+        throw new ApiError (500, "something went wrong while generating and access token")
+
+    }
+}
+
+export {generateAccessAndRefereshTokens}
+
 const registerUser = asyncHandler(async (req, res) =>{
 
     // get user details from frontend
@@ -25,7 +48,7 @@ const registerUser = asyncHandler(async (req, res) =>{
   throw new ApiError(400,"fullname is required");
     }
 
-  const existedUser =  User.findOne({
+  const existedUser = await User.findOne({
     // console.log(existedUser, "existedUser")
     $or:[{ username },{email}]
    })
@@ -36,7 +59,13 @@ const registerUser = asyncHandler(async (req, res) =>{
 
  const avatarLocalPath = req.files?.avatar[0]?.path
   
- const  coverImageLocalPath = req.files?.coverImage[0]?.path;
+//  const  coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+let coverImageLocalPath;
+if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0 ){
+    coverImageLocalPath = req.files.coverImage[0].path
+
+}
 
  if(!avatarLocalPath){
     throw new ApiError( 400,"Avatar file is required")
@@ -99,7 +128,42 @@ return res.status(201).json(
     // res.status(200).json({
     //     message:"ok"
     // })
+
+
+
+
+})
+
+const loginUser = asyncHandler(async (req, res) => {
+    //req body -> data
+    // username or email
+    //find the user
+    //password check
+    // access and refresh roken
+    // send cookie
+    // return res
+ const  {username, email, password } = req.body
+ if (!username || !email){
+    throw new ApiError (400, "username or email is required")
+ }
+
+ const user = await User.findOne({
+    $or:[{username},{email}]
+ })
+
+  if(!user){
+    throw new ApiError(404, "User does not exists")
+  }
+
+const isPasswordValid = await user.isPasswordCorrect(password)
+
+ if(!isPasswordValid){
+    throw new ApiError(401, "Invalid user credentials")
+  }
+
+generateAccessAndRefereshTokens(user._id)
+
 })
 
 
-export {registerUser}
+export {registerUser,loginUser}
