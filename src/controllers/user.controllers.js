@@ -19,7 +19,8 @@ const generateAccessAndRefereshTokens = async(userId) => {
 
     }
     catch (error){
-        throw new ApiError (500, "something went wrong while generating and access token")
+        throw new ApiError (500, 
+            "something went wrong while generating and access token")
 
     }
 }
@@ -161,9 +162,48 @@ const isPasswordValid = await user.isPasswordCorrect(password)
     throw new ApiError(401, "Invalid user credentials")
   }
 
-generateAccessAndRefereshTokens(user._id)
+ const {accessToken, refreshToken} =  await generateAccessAndRefereshTokens(user._id)
 
+ const lggginUser = await User.findById(user._id).select("-password -refreshToken")
+
+
+ const options = {
+    httpOnly :true,
+    secure:true
+ }
+
+ return res.status(200).cookie("accessToken", accessToken, options).cookie("refreshToken", refreshToken, options).json(new ApiResponse(200,
+    {
+        user: lggginUser, accessToken,refreshToken
+    },
+    "user logged in successfully"
+
+ ))
+
+
+ 
 })
 
 
-export {registerUser,loginUser}
+const logoutUser = asyncHandler(async(req, res)=>{
+   User.findByIdAndUpdate(
+  await  req.user._id,{
+        $set:{
+            refreshToken : undefined
+        }
+    },{
+        new:true
+    }
+   )
+
+    const options = {
+    httpOnly :true,
+    secure:true
+ }
+
+ return res.status(200).ClearCookie("accessToken", options).ClearCookie("refreshToken", options).json (new ApiResponse (200, {}, "User logouted "))
+
+ })
+
+
+export {registerUser,loginUser, logoutUser}

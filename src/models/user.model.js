@@ -1,6 +1,7 @@
 import mongoose, {Schema} from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import { asyncHandler } from "../utils/asyncHandler";
 
 
 
@@ -91,10 +92,15 @@ userSchema.methods.generateRefreshToken = function () {
    
     _id: this._id,
    
-  }, process.env.REFRESH_TOKEN_SECRET, {
+  },
+   process.env.REFRESH_TOKEN_SECRET, {
     expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
   });
 };
+
+
+
+const loggoutUser = asyncHandler(async())
 
 
 
